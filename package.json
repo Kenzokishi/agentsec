@@ -1,0 +1,41 @@
+{
+  "name": "agentsec-scanner",
+  "version": "0.1.0",
+  "description": "Red-team scanner for LLM apps, AI agents and MCP servers. Probes for prompt injection, system-prompt leakage, tool poisoning and data exfiltration, mapped to the OWASP LLM Top 10.",
+  "keywords": [
+    "llm",
+    "security",
+    "ai-security",
+    "prompt-injection",
+    "mcp",
+    "red-team",
+    "owasp-llm",
+    "jailbreak"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "agentsec": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "demo": "tsx src/index.ts scan --target demo",
+    "test": "node --test --import tsx ./test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "picocolors": "1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5",
+    "tsx": "4.19.2",
+    "typescript": "5.7.3"
+  }
+}
