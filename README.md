@@ -2,7 +2,6 @@
 
 > Red-team scanner for LLM apps, AI agents and MCP servers — probes for prompt injection, system-prompt leakage, secret exfiltration and tool abuse, mapped to the [OWASP Top 10 for LLM Applications](https://genai.owasp.org/llm-top-10/).
 
-[![CI](https://github.com/Kenzokishi/agentsec/actions/workflows/ci.yml/badge.svg)](https://github.com/Kenzokishi/agentsec/actions/workflows/ci.yml)
 ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
