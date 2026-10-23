@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Self-scan (demo target must be caught)
+        # The scanner should flag the built-in vulnerable agent. We invert the
+        # exit code: if the demo were NOT caught (score high), CI should fail.
+        run: |
+          node dist/index.js scan --target demo --fail-under 80 && {
+            echo "::error::demo target was not flagged — probes regressed"
+            exit 1
+          } || echo "demo correctly flagged as vulnerable"
