@@ -53,10 +53,10 @@ ${pc.bold("Options")}
   --verbose         Print per-payload progress while probing.
 
 ${pc.bold("Examples")}
-  npx agentsec scan --target demo
-  npx agentsec scan --target https://api.openai.com/v1/chat/completions --model gpt-4o-mini
-  npx agentsec scan --target demo --report md --out report.md
-  npx agentsec scan --target demo --fail-under 80
+  agentsec scan --target demo
+  agentsec scan --target https://api.openai.com/v1/chat/completions --model gpt-4o-mini
+  agentsec scan --target demo --report md --out report.md
+  agentsec scan --target demo --fail-under 80
 `;
 
 function resolveTarget(flags: Flags): Target {

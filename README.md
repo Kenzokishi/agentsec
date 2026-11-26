@@ -1,120 +1,96 @@
 # agentsec
 
-> Red-team scanner for LLM apps, AI agents and MCP servers — probes for prompt injection, system-prompt leakage, secret exfiltration and tool abuse, mapped to the [OWASP Top 10 for LLM Applications](https://genai.owasp.org/llm-top-10/).
+Red-team scanner for LLM apps, AI agents and MCP servers. It sends known attacks (prompt injection, system-prompt leakage, secret exfiltration and tool abuse) and maps each finding to the [OWASP Top 10 for LLM Applications](https://genai.owasp.org/llm-top-10/).
 
 [![CI](https://github.com/Kenzokishi/agentsec/actions/workflows/ci.yml/badge.svg)](https://github.com/Kenzokishi/agentsec/actions/workflows/ci.yml)
 ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-AI features ship fast and get attacked faster. `agentsec` throws a battery of
-known attacks at your model-powered app and tells you, in one score, what an
-attacker could get it to do — leak its system prompt, reveal secrets, or fire a
-money-moving tool from a single injected sentence.
-
-It runs **out of the box with zero API keys**: a deliberately vulnerable agent
-ships inside, so you can see a real attack land in ten seconds.
+It comes with a deliberately vulnerable demo agent, so you can see the attacks work without any API key:
 
 ```bash
-npx agentsec-scanner scan --target demo
+git clone https://github.com/Kenzokishi/agentsec && cd agentsec
+npm ci
+npm run demo
 ```
 
 <img alt="agentsec scanning its built-in vulnerable demo agent: 4 vulnerabilities found, score 0/100" src="assets/demo.svg" width="100%">
 
-Prefer to run it from source?
+---
 
-```bash
-git clone https://github.com/Kenzokishi/agentsec && cd agentsec
-npm ci && npm run demo
-```
+### Em português
+
+O `agentsec` é um scanner de segurança para aplicações com IA. Ele ataca o app (ou um agente, ou um servidor MCP) com injeção de prompt, vazamento do system prompt, roubo de segredos e abuso de ferramentas, e devolve um relatório com nota de 0 a 100 ligado ao OWASP Top 10 para LLM. Vem com um agente vulnerável de exemplo, então roda sem nenhuma chave de API. Também pode rodar no CI e reprovar o build se a nota ficar baixa.
 
 ---
 
-### 🇧🇷 Em português
+## What it tests
 
-`agentsec` é um scanner de segurança para aplicações com IA. Ele ataca o seu
-app (ou um agente, ou um servidor MCP) com injeção de prompt, vazamento de
-system prompt, roubo de segredos e abuso de ferramentas, e devolve um relatório
-com nota de 0 a 100 ligado ao OWASP Top 10 para LLM. Roda sem nenhuma chave de
-API: já vem com um agente vulnerável embutido para você ver um ataque funcionando
-na hora. Pode rodar no CI e reprovar o build se a nota ficar baixa.
-
----
-
-## Why
-
-Most "AI security" advice is a checklist. This is a tool you can point at a
-running system. Each probe is a real, reproducible attack with a concrete fix,
-so a finding is something you can act on, not a vibe.
-
-| Probe | OWASP | What it proves |
+| Probe | OWASP | What it checks |
 | --- | --- | --- |
 | Direct prompt injection | `LLM01` | User text overrides the system prompt |
 | System prompt leakage | `LLM07` | The app prints its own hidden instructions |
-| Sensitive information disclosure | `LLM02` | A planted secret can be exfiltrated |
-| Excessive agency (tool abuse) | `LLM06` | Injected text drives a sensitive tool call |
+| Sensitive information disclosure | `LLM02` | A planted secret can be extracted |
+| Excessive agency (tool abuse) | `LLM06` | Injected text triggers a sensitive tool call |
 
-## Install & run
+Each finding comes with the evidence and a suggested fix.
+
+## Usage
+
+Build once, then run the CLI:
 
 ```bash
-# no install — try the demo
-npx agentsec-scanner scan --target demo
+npm run build
 
-# scan a real OpenAI-compatible endpoint
+# built-in vulnerable agent
+node dist/index.js scan --target demo
+
+# any OpenAI-compatible /chat/completions endpoint
 export AGENTSEC_API_KEY=sk-...
-npx agentsec-scanner scan \
-  --target https://api.openai.com/v1/chat/completions \
-  --model gpt-4o-mini
+node dist/index.js scan --target https://api.openai.com/v1/chat/completions --model gpt-4o-mini
 
-# pick specific probes, write a Markdown report
-npx agentsec-scanner scan --target demo --probes prompt-injection,excessive-agency
-npx agentsec-scanner scan --target demo --report md --out report.md
+# only some probes, Markdown report
+node dist/index.js scan --target demo --probes prompt-injection,excessive-agency
+node dist/index.js scan --target demo --report md --out report.md
 
-# list everything it can test
-npx agentsec-scanner list
+# list the probes
+node dist/index.js list
 ```
 
-Works against any OpenAI-compatible `/chat/completions` endpoint: OpenAI, Azure,
-Groq, Ollama, vLLM, LM Studio, or your own gateway.
+Run `npm link` once if you prefer to call it as `agentsec` from anywhere.
 
-## Use it in CI
+It works with any OpenAI-compatible endpoint: OpenAI, Azure, Groq, Ollama, vLLM, LM Studio or your own gateway.
 
-Fail a pull request if the app's AI surface regresses below a threshold:
+## In CI
+
+`--fail-under <n>` exits with code 1 when the score is below `n`, so a new prompt-injection hole fails the pipeline:
 
 ```yaml
-- run: npx agentsec-scanner scan --target "$STAGING_URL" --model gpt-4o-mini --fail-under 80
+- run: git clone --depth 1 https://github.com/Kenzokishi/agentsec /tmp/agentsec
+- run: cd /tmp/agentsec && npm ci && npm run build
+- run: node /tmp/agentsec/dist/index.js scan --target "$STAGING_URL" --model gpt-4o-mini --fail-under 80
 ```
 
-`--fail-under <n>` exits non-zero when the score drops below `n`, so a new
-prompt-injection hole breaks the build instead of reaching production.
+This repository's own CI runs the scanner against the demo agent and fails if the attacks stop being detected.
 
 ## How it works
 
-Three small pieces, each easy to extend:
+- **Targets** (`src/targets/`): anything you can send a message to. There is the built-in `demo` agent and a generic `http` adapter.
+- **Probes** (`src/probes/`): one attack technique each. A probe sends crafted inputs and looks for evidence in the responses.
+- **Scanner and report** (`src/core/`, `src/report/`): run the probes, compute the score (100 minus the weight of each vulnerable finding) and print it to the console or as Markdown.
 
-- **Targets** (`src/targets/`) — anything you can send a message to. Ships with
-  the built-in `demo` agent and a generic `http` adapter.
-- **Probes** (`src/probes/`) — one attack technique each. A probe sends crafted
-  inputs and inspects the responses for evidence the attack worked.
-- **Scanner + report** (`src/core/`, `src/report/`) — runs the probes, scores the
-  result (100 minus the weight of every vulnerable finding), and renders it to
-  the console or Markdown.
-
-Adding a probe is a single file exporting a `Probe`. Adding a target is a single
-file exporting something with a `send()` method. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+A new probe is one file that exports a `Probe`. A new target is one file with a `send()` method. More details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Responsible use
 
-`agentsec` is for testing systems **you own or are authorized to test**. The
-bundled demo target is intentionally insecure to teach what the attacks look
-like — never model a real product on it. Don't point this at third-party
-services without permission.
+Only test systems you own or are authorized to test. The demo agent is insecure on purpose, to show what the attacks look like.
 
-## Roadmap
+## Next steps
 
-- Native MCP target (scan a server's tools directly over stdio)
-- Indirect / retrieval injection probe (poisoned documents, `LLM08`)
-- HTML report with per-finding reproduction steps
-- Jailbreak corpus and multi-turn attacks
+- MCP target (scan a server's tools over stdio)
+- Indirect injection through retrieved documents (`LLM08`)
+- HTML report with reproduction steps
+- Multi-turn attacks
 
 ## License
 
