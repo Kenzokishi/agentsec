@@ -25,7 +25,9 @@
     "dev": "tsx src/index.ts",
     "demo": "tsx src/index.ts scan --target demo",
     "test": "node --test --import tsx ./test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm test",
+    "prepack": "npm run build"
   },
   "engines": {
     "node": ">=20"
@@ -37,5 +39,11 @@
     "@types/node": "22.10.5",
     "tsx": "4.19.2",
     "typescript": "5.7.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kenzokishi/agentsec.git"
+  },
+  "homepage": "https://github.com/Kenzokishi/agentsec#readme",
+  "author": "Pedro Kenzo"
 }
